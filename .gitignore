@@ -1,0 +1,9 @@
+Objects/
+Listings/
+
+*.uvgui.*
+*.uvopt*
+
+STARTUP.A51
+
+*.uvproj*
