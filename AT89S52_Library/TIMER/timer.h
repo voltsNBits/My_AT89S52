@@ -3,8 +3,8 @@
 --------------------------------------------------------------------------------------------------------
                             'A Header File for a Timer Operations in AT89S52' 
 --------------------------------------------------------------------------------------------------------*/
-#ifndef _TIMER_H
-#define _TIMER_H
+#ifndef AT89S52_TIMER_H
+#define AT89S52_TIMER_H
 
 #include "device.h"
 
@@ -30,14 +30,29 @@
 #define T2_TIMER 0
 #define T2_COUNTER 1
 
+// ----- enum for indicating which Timer -----
+typedef enum{
+    TIMER_0,
+    TIMER_1,
+    TIMER_2
+}TIMER_ID;
+
+// ----- enum for indicating Timer Use Status -----
+typedef enum{
+    TIMER_FREE,
+	TIMER_BUSY
+}Timer_Status;
+
 // ----- PUBLIC FUNCTION PROTOTYPES -----
-void Timer_Load(uint8_t, uint16_t);
-void Timer_Set_Mode(uint8_t, uint8_t);
-void Timer_Run(uint8_t);
-void Timer_Stop(uint8_t);
-void Timer_Clear_Overflow(uint8_t);
-bit Timer_Is_Overflowed(uint8_t);
-uint16_t Timer_Read(uint8_t);
+void Timer_Load(TIMER_ID, uint16_t);
+void Timer_Set_Mode(TIMER_ID, uint8_t);
+void Timer_Run(TIMER_ID);
+void Timer_Stop(TIMER_ID);
+void Timer_Clear_Overflow(TIMER_ID);
+bit Timer_Is_Overflowed(TIMER_ID);
+uint16_t Timer_Read(TIMER_ID);
+bit Timer_Request(TIMER_ID);
+void Timer_Release(TIMER_ID);
 
 // ----- TIMER 2 SPECIFIC PUBLIC FUNCTION PROTOTYPES -----
 void Timer2_CorT2(bit);
@@ -50,8 +65,8 @@ void Timer2_Disable_External(void);
 bit Timer2_Get_EXF2(void);
 
 // ----- PUBLIC FUNCTION PROTOTYPES FOR INTERRUPT OPERATIONS -----
-void Timer_Enable_Interrupt(uint8_t);
-void Timer_Disable_Interrupt(uint8_t);
+void Timer_Enable_Interrupt(TIMER_ID);
+void Timer_Disable_Interrupt(TIMER_ID);
 
 #endif
 

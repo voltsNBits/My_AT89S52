@@ -13,6 +13,12 @@
   with 9600 baud and SMOD = 0
 ---------------------------------------------------------------------*/
 void Uart_Init(void){
+
+  // Request for Timer 1 access, if denied return
+	if(Timer_Request(TIMER_1) != TIMER_FREE){
+		return;
+	}
+
   UartT1_SMOD(0);
 	UartT1_Set_Baud(1,9600);
 	Uart_Enable_Reception();
@@ -48,13 +54,13 @@ void UartT1_Set_Baud(uint8_t uart_mode, uint16_t baud_rate){
 	SMOD = UartT1_Get_SMOD();
 	
 	switch (uart_mode){ 
-		/* Mode 0: In this mode (considering: OSC_FREQ=11059200UL Hz)
+		/* Mode 0: In this mode (considering : OSC_FREQ=11059200UL Hz)
 		   Baud Rate = OSC_FREQ/12 = 921600 Baud */
   	    case 0: SM0=0; SM1=0;
   		    break;
 		
 		// ----- Considering Timer 1 is used only in Mode 2 for Baud Generation -----
-		/* Mode 1: In this mode (considering:OSC_FREQ=11059200UL Hz)
+		/* Mode 1: In this mode (considering : OSC_FREQ=11059200UL Hz)
 		   Baud Rate = ((2^SMOD)*OSC_FREQ)/(32*12*[256-(TH1)]) Baud */
   	    case 1: SM0=0; SM1=1;
 		        reload_value = 256 - ((((1UL+(uint8_t)SMOD)*OSC_FREQ) +((384UL*baud_rate)/2))/(384UL*baud_rate));
@@ -200,6 +206,31 @@ void Uart_RCLK(bit rclk_state){
 void Uart_TCLK(bit tclk_state){
 	TCLK = tclk_state;
 }
+
+/* 
+   Add string functions later
+   Eventually:
+   void Uart_Send_String(char *str);
+   void Uart_Send_Line(char *str);
+   These are extremely useful.
+   Add non-blocking functions
+
+
+   Possible future additions:
+   void Uart_Enable_Multiprocessor_Mode(void);
+   void Uart_Disable_Multiprocessor_Mode(void);
+
+   void Uart_Set_Mode(UartMode_t mode);
+
+   void Uart_Enable_Interrupt(void);
+   void Uart_Disable_Interrupt(void);
+
+   bit Uart_Is_Transmit_Complete(void);
+   bit Uart_Is_Receive_Complete(void);
+
+   void Uart_Send_String(char *str);
+
+   void Uart_Send_Buffer(uint8_t *buf,uint16_t len);  */
 
 /*------------------------------------------------------------------------------------------------------
                                               END OF FILE

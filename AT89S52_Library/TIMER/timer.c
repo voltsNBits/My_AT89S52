@@ -1,43 +1,50 @@
 /*------------------------------------------------------------------------------------------------------
                                              TIMER.C (v1.00)
 --------------------------------------------------------------------------------------------------------
-                               'A .C File for a Timer Operations in AT89S52' 
+                                'A .C File for Timer Operations in AT89S52' 
+		NOTE : The caller must succesfully acquire the timer using Timer_Request() before calling 
+		           any other Timer_* APIs. Failure to do so results in Undefined behaviour
 --------------------------------------------------------------------------------------------------------*/
 #include "device.h"
 #include "timer.h"
 
 // ----- PRIVATE FUNCTION PROTOTYPES -----
-void Timer_Load16(uint8_t, uint16_t);
-void Timer_Load8(uint8_t, uint8_t);
+static void Timer_Load16(TIMER_ID, uint16_t);
+static void Timer_Load8(TIMER_ID, uint8_t);
+static Timer_Status timer_status[3] = {
+    TIMER_FREE,
+    TIMER_FREE,
+    TIMER_FREE
+};
 
-void Timer_Load16(uint8_t timer, uint16_t load_value){
+static void Timer_Load16(TIMER_ID timer, uint16_t load_value){
 	
 	switch (timer){
-  	    case 0: TH0= (uint8_t)(load_value>>8);      //Higher 8 bits
-	            TL0= (uint8_t)(load_value & 0xFF);  //Lower 8 bits
+  	    case TIMER_0: TH0 = (uint8_t)(load_value>>8);      //Higher 8 bits
+	                  TL0 = (uint8_t)(load_value & 0xFF);  //Lower 8 bits
   		    break;
-  	    case 1: TH1= (uint8_t)(load_value>>8);      //Higher 8 bits
-	            TL1= (uint8_t)(load_value & 0xFF);  //Lower 8 bits
+  	    case TIMER_1: TH1 = (uint8_t)(load_value>>8);      //Higher 8 bits
+	                  TL1 = (uint8_t)(load_value & 0xFF);  //Lower 8 bits
   		    break;
-	    case 2: TH2= (uint8_t)(load_value>>8);      //Higher 8 bits
-	            TL2= (uint8_t)(load_value & 0xFF);  //Lower 8 bits
+	    case TIMER_2: TH2 = (uint8_t)(load_value>>8);      //Higher 8 bits
+	                  TL2 = (uint8_t)(load_value & 0xFF);  //Lower 8 bits
   		    break;
   	    default:
   		    break;
     }
 }
 
-void Timer_Load8(uint8_t timer, uint8_t load_value){
+static void Timer_Load8(TIMER_ID timer, uint8_t load_value){
 	
 	switch (timer){
-  	    case 0: TL0 = load_value;  //Lower 8 bits
-		        TH0 = load_value;
+  	    case TIMER_0: TL0 = load_value;  //Lower 8 bits
+		              TH0 = load_value;
   		    break;
-  	    case 1: TL1 = load_value;  //Lower 8 bits
-		        TH1 = load_value;
+  	    case TIMER_1: TL1 = load_value;  //Lower 8 bits
+		              TH1 = load_value;
   		    break;
-	    case 2: TL2 = load_value;  //Lower 8 bits
-		        TH2 = load_value;
+	    case TIMER_2: TL2 = load_value;  //Lower 8 bits
+		              TH2 = load_value;
   		    break;
   	    default:
   		    break;
@@ -50,11 +57,11 @@ void Timer_Load8(uint8_t timer, uint8_t load_value){
   Parameter 2: load_value - Stores load value
   Note: supports only Timer Mode 1 and Mode 2.
 ---------------------------------------------------------------------*/
-void Timer_Load(uint8_t timer, uint16_t load_value){
+void Timer_Load(TIMER_ID timer, uint16_t load_value){
 	
 	uint8_t mode;
 	switch (timer){
-  	    case 0: mode = (TMOD & 0x03); 
+  	    case TIMER_0: mode = (TMOD & 0x03); 
 			    switch (mode){
 			        case 1: Timer_Load16(timer, load_value);
 				        break;
@@ -62,7 +69,7 @@ void Timer_Load(uint8_t timer, uint16_t load_value){
 				        break;
 			    }
   		    break;
-  	    case 1: mode = ((TMOD>>4) & 0x03); 
+  	    case TIMER_1: mode = ((TMOD>>4) & 0x03); 
 			    switch (mode){
 			        case 1: Timer_Load16(timer, load_value);
 				        break;
@@ -70,7 +77,7 @@ void Timer_Load(uint8_t timer, uint16_t load_value){
 				        break;
 			    }
   		    break;
-	    case 2: Timer_Load16(timer, load_value);
+	    case TIMER_2: Timer_Load16(timer, load_value);
 		    break;                                                                                                                                                                        
   	    default:
   		    break;
@@ -80,17 +87,17 @@ void Timer_Load(uint8_t timer, uint16_t load_value){
 /*-------------------------------------------------------------------
   Sets Timer Mode for Timer 0 and Timer 1 as per the given parameters
 ---------------------------------------------------------------------*/
-void Timer_Set_Mode(uint8_t timer, uint8_t mode){
+void Timer_Set_Mode(TIMER_ID timer, uint8_t mode){
 	
 	switch (timer){
-  	    case 0: TMOD &= 0xF0;
+  	    case TIMER_0: TMOD &= 0xF0;
 	            TMOD |= mode;
   		    break;
-  	    case 1: TMOD &= 0x0F;
+  	    case TIMER_1: TMOD &= 0x0F;
 	            TMOD |= mode;
   		    break;
      /*		
-		case 2: 
+		case TIMER_2: 
   		    break;
      */
   	    default:
@@ -102,14 +109,14 @@ void Timer_Set_Mode(uint8_t timer, uint8_t mode){
   Starts Timer by Setting TRx = 1.
   Function Parameter decides which timer is made to Start Counting.
 ---------------------------------------------------------------------*/
-void Timer_Run(uint8_t timer){
+void Timer_Run(TIMER_ID timer){
 	
 	switch (timer){
-  	    case 0: TR0=1;
+  	    case TIMER_0: TR0=1;
   		    break;
-  	    case 1: TR1=1;
+  	    case TIMER_1: TR1=1;
   		    break;
-	    case 2: TR2=1;
+	    case TIMER_2: TR2=1;
   		    break;
   	    default:
   		    break;
@@ -120,14 +127,14 @@ void Timer_Run(uint8_t timer){
   Stops Timer by Clearing TRx = 0.
   Function Parameter decides which timer is stopped.
 ---------------------------------------------------------------------*/
-void Timer_Stop(uint8_t timer){
+void Timer_Stop(TIMER_ID timer){
 	
 	switch (timer){
-  	    case 0: TR0=0;
+  	    case TIMER_0: TR0=0;
   		    break;
-  	    case 1: TR1=0;
+  	    case TIMER_1: TR1=0;
   		    break;
-	    case 2: TR2=0;
+	    case TIMER_2: TR2=0;
   		    break;
   	    default:
   		    break;
@@ -139,14 +146,14 @@ void Timer_Stop(uint8_t timer){
   Function Parameter decides which timer Overflow is Cleared.
   Note: For Timer2, both TF2 and EXF2 are cleared.
 ---------------------------------------------------------------------*/
-void Timer_Clear_Overflow(uint8_t timer){
+void Timer_Clear_Overflow(TIMER_ID timer){
 	
 	switch (timer){
-  	    case 0: TF0=0;
+  	    case TIMER_0: TF0=0;
   		   break;
-  	    case 1: TF1=0;
+  	    case TIMER_1: TF1=0;
   		   break;
-	    case 2: TF2=0;EXF2=0;
+	    case TIMER_2: TF2=0;EXF2=0;
   		   break;
   	    default:
   		   break;
@@ -157,14 +164,14 @@ void Timer_Clear_Overflow(uint8_t timer){
   Returns current TFx state.
   Function Parameter decides which timer Overflow Flag is returned.
 ---------------------------------------------------------------------*/
-bit Timer_Is_Overflowed(uint8_t timer){
+bit Timer_Is_Overflowed(TIMER_ID timer){
 	
 	switch (timer){
-  	    case 0: return TF0;
+  	    case TIMER_0: return TF0;
   		    break;		
-  	    case 1: return TF1;
+  	    case TIMER_1: return TF1;
   		    break;	
-	    case 2: return TF2;
+	    case TIMER_2: return TF2;
   		    break;
   	    default: return 0;
   		    break;
@@ -174,15 +181,15 @@ bit Timer_Is_Overflowed(uint8_t timer){
 /*-------------------------------------------------------------------
   Reads the count value of THx,TLx at the movement this function is called
 ---------------------------------------------------------------------*/
-uint16_t Timer_Read(uint8_t timer){
+uint16_t Timer_Read(TIMER_ID timer){
 	  
     switch(timer){
 		// Timer in Mode2 returns THx(reload value):TLx raw register contents
-        case 0: return ((uint16_t)TH0 << 8) | TL0;
+        case TIMER_0: return ((uint16_t)TH0 << 8) | TL0;
             break;
-        case 1: return ((uint16_t)TH1 << 8) | TL1;
+        case TIMER_1: return ((uint16_t)TH1 << 8) | TL1;
             break;	
-        case 2: return ((uint16_t)TH2 << 8) | TL2;
+        case TIMER_2: return ((uint16_t)TH2 << 8) | TL2;
             break;
         default:return 0;
 			break;
@@ -207,8 +214,8 @@ void Timer2_CorT2(bit mode){
 ---------------------------------------------------------------------*/
 void Timer2_Set_RCAP(uint16_t load_value){
 	
-	RCAP2H= (uint8_t)(load_value>>8);      //Higher 8 bits
-	RCAP2L= (uint8_t)(load_value & 0xFF);  //Lower 8 bits
+	RCAP2H = (uint8_t)(load_value>>8);      //Higher 8 bits
+	RCAP2L = (uint8_t)(load_value & 0xFF);  //Lower 8 bits
 }
 
 /*-------------------------------------------------------------------
@@ -274,15 +281,15 @@ bit Timer2_Get_EXF2(void){
   Enable Timer Interrupt.
   Function Parameter decides which timer Interrupt is Enabled.
 ---------------------------------------------------------------------*/
-void Timer_Enable_Interrupt(uint8_t timer){
+void Timer_Enable_Interrupt(TIMER_ID timer){
 	
 	switch (timer){
-   	    case 0: ET0 = 1;
+   	    case TIMER_0: ET0 = 1;
    		    break;
-   	    case 1: ET1 = 1;
+   	    case TIMER_1: ET1 = 1;
    		    break;
 	    // Responds to both TF2 and EXF2 Flags
-	    case 2: ET2 = 1;
+	    case TIMER_2: ET2 = 1;
    		    break;
    	    default:
    		    break;
@@ -293,18 +300,44 @@ void Timer_Enable_Interrupt(uint8_t timer){
   Disable Timer Interrupt.
   Function Parameter decides which timer Interrupt is Disabled.
 ---------------------------------------------------------------------*/
-void Timer_Disable_Interrupt(uint8_t timer){
+void Timer_Disable_Interrupt(TIMER_ID timer){
 	
 	switch (timer){
-   	    case 0: ET0 = 0;
+   	    case TIMER_0: ET0 = 0;
    		    break;
-   	    case 1: ET1 = 0;
+   	    case TIMER_1: ET1 = 0;
    		    break;
-	    case 2: ET2 = 0;
+	    case TIMER_2: ET2 = 0;
    		    break;
    	    default:
    		    break;
     }
+}
+
+/*-------------------------------------------------------------------
+  Request Timer.
+  Function Parameter decides which timer is requested.
+  return 1 : Request Accepted 
+  return 0 : Request Denied. Timer already in use.
+---------------------------------------------------------------------*/
+bit Timer_Request(TIMER_ID timer)
+{
+    if(timer_status[timer] == TIMER_FREE){
+
+        timer_status[timer] = TIMER_BUSY;
+        return 1;
+    }
+
+    return 0;
+}
+
+/*-------------------------------------------------------------------
+  Timer Release Function.
+  Assigns Timer status flag to TIMER_FREE.
+---------------------------------------------------------------------*/
+void Timer_Release(TIMER_ID timer){
+
+    timer_status[timer] = TIMER_FREE;
 }
 
 /*------------------------------------------------------------------------------------------------------
